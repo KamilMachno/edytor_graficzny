@@ -1,0 +1,285 @@
+<!Doctype html>
+<html>
+    <head>
+        <Title>Canvas</Title>
+       
+        <style>
+            body{
+                text-align: center;
+            }
+            #Can{
+                width: 600px;
+                height: 400px;
+                background-color: gainsboro;
+            }
+            #title{
+                width: 100%;
+                height: 110px;
+                background-color:  rgb(76, 107, 175);
+                padding: 30px;
+            }
+            #title h2{
+                color: white;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            .slider {
+            -webkit-appearance: none;
+            width: 40%;
+            height: 10px;
+            border-radius: 5px;   
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+            margin-top: 10px;
+            margin-bottom: 35px;
+            }
+
+            .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%; 
+            background: rgb(76, 107, 175);
+            cursor: pointer;
+            }
+            #edytory{
+                margin-top: 30px;
+            }
+            
+
+        </style>
+    </head>
+    <body>
+
+        <div id="title">
+            <h2>Edytor graficzny</h2>
+            <button id="run">Pobierz plik</button>
+        </div>
+        <br>
+        <canvas id="Can">
+            <p>Pobierz zdjęcie</p>
+        </canvas>
+
+        <div id="edytory">
+        
+        <label>Jasność</label><br>
+        <input id="jasnosc" class="slider" type="range" min="-127" max="127" step="2" val="0"><br>
+        <label>Kontrast</label><br>
+        <input id="kontrast" class="slider" type="range" min="0" max="120" step="0.1" val="0"><br>
+        <label>Nasycenie</label><br>
+        <input id="nasycenie" class="slider" type="range" min="-10" max="10" step="0.1" val="0">
+        </div>
+
+        <script>
+                let plotno = document.querySelector("#Can")
+                let btnRun = document.querySelector("#run")
+
+                let zdjecie ="./zdjecie.jpg"
+        
+                let ctx = plotno.getContext('2d')
+                ctx.font = "15px Segoe UI, Tahoma, Geneva, Verdana, sans-serif";
+                ctx.fillText("Wczytaj obraz", plotno.width/3, plotno.height/2); 
+        
+                let img = new Image()
+                
+                
+        
+                img.addEventListener('load', (e)=>{
+                    ctx.drawImage(img, 0, 0, plotno.width, plotno.height)
+                })
+
+                //Pobieranie obrazu
+
+                btnRun.addEventListener('click', (e)=>{
+                   
+                    img.src = zdjecie
+                })
+
+                //Zmiana kontrastu obrazu
+                
+                let kontrast = document.querySelector("#kontrast")
+
+                    kontrast.addEventListener('change', (e)=>{
+                    ctx.drawImage(img, 0, 0, plotno.width, plotno.height)
+                    let imageData = ctx.getImageData(0, 0, plotno.width, plotno.height)
+                    //console.log(imageData.data.length)
+                    console.log(e.target.value)
+                    console.log(imageData.data[10])
+                    var targetValue = parseInt(e.target.value)/100
+                    
+
+                    let i = 0;
+
+                    while (i < imageData.data.length){
+
+                        for(let j = 0; j < 3; j++){
+                            if((targetValue*(imageData.data[i+j]-127)+127)<0)
+                            imageData.data[i+j]=0
+                            else if((targetValue*(imageData.data[i+j]-127)+127)>255)
+                            imageData.data[i+j]=255
+                            else
+                            imageData.data[i+j] +=  targetValue*(imageData.data[i+j]-127)+127
+                        }
+                        i+=4;
+                    }
+                    console.log(imageData.data[100])
+                    ctx.putImageData(imageData,0,0)
+                })
+
+                //zmiana jasności obrazu
+
+                let jasnosc = document.querySelector("#jasnosc")
+
+                jasnosc.addEventListener('change', (e)=>{
+                    ctx.drawImage(img, 0, 0, plotno.width, plotno.height)
+                    let imageData = ctx.getImageData(0, 0, plotno.width, plotno.height)
+                    //console.log(imageData.data.length)
+                    console.log(e.target.value)
+                    console.log(imageData.data[10])
+                    var targetValue = parseInt(e.target.value)
+
+                    let i = 0;
+
+                    while (i < imageData.data.length){
+
+                        for(let j = 0; j < 3; j++){
+                            if(imageData.data[i+j]+targetValue<0)
+                                imageData.data[i+j]=0
+                            else if(imageData.data[i+j]>255)
+                                imageData.data[i+j]=255
+                            else
+                                imageData.data[i+j] +=  targetValue
+                        }
+                        i+=4;
+                    }
+                    console.log(imageData.data[100])
+                    ctx.putImageData(imageData,0,0)
+                })
+
+                //zmiana nasycenia obrazu
+                
+                //1. Konwersja z RGB na HSV
+
+                function RGBtoHSV(color){
+                    var r = color[0]
+                    var g = color[1]
+                    var b = color[2]
+
+                    var min = Math.min(r,g,b)
+                    var max = Math.max(r,g,b)
+
+                    v = max;
+                    delta = max - min;
+                     if( max != 0 )
+                        s = delta / max;        // s
+                     else {
+                        // r = g = b = 0        // s = 0, v is undefined
+                     s = 0;
+                     h = -1;
+                    return [h, s, undefined];
+                    }
+                    if( r === max )
+                        h = ( g - b ) / delta;      // between yellow & magenta
+                    else if( g === max )
+                         h = 2 + ( b - r ) / delta;  // between cyan & yellow
+                    else
+                         h = 4 + ( r - g ) / delta;  // between magenta & cyan
+                        h *= 60;                // degrees
+                    if( h < 0 )
+                         h += 360;
+                    if ( isNaN(h) )
+                        h = 0;
+                    return [h,s,v];
+                    
+                }
+               
+                //2. Konwersja z HSV na RGB
+
+                function HSVtoRGB(color){
+                    var i;
+                    var h,s,v,r,g,b;
+                    h= color[0];
+                    s= color[1];
+                    v= color[2];
+                    if(s === 0 ) {
+                        // achromatic (grey)
+                        r = g = b = v;
+                        return [r,g,b];
+                    }
+                    h /= 60;            // sector 0 to 5
+                    i = Math.floor( h );
+                    f = h - i;          // factorial part of h
+                    p = v * ( 1 - s );
+                    q = v * ( 1 - s * f );
+                    t = v * ( 1 - s * ( 1 - f ) );
+                    switch( i ) {
+                        case 0:
+                            r = v;
+                            g = t;
+                            b = p;
+                            break;
+                        case 1:
+                            r = q;
+                            g = v;
+                            b = p;
+                            break;
+                        case 2:
+                            r = p;
+                            g = v;
+                            b = t;
+                            break;
+                        case 3:
+                            r = p;
+                            g = q;
+                            b = v;
+                            break;
+                        case 4:
+                            r = t;
+                            g = p;
+                            b = v;
+                            break;
+                        default:        // case 5:
+                            r = v;
+                            g = p;
+                            b = q;
+                            break;
+                    }
+                    return [r,g,b];
+                            }
+
+                    //3. Zmiana nasycenia
+
+                    let nasycenie = document.querySelector("#nasycenie")
+
+                    nasycenie.addEventListener('change', (e)=>{
+                    ctx.drawImage(img, 0, 0, plotno.width, plotno.height)
+                    let imageData = ctx.getImageData(0, 0, plotno.width, plotno.height)
+                    //console.log(imageData.data.length)
+                    console.log(e.target.value)
+                    console.log(imageData.data[10])
+                    var targetValue = parseInt(e.target.value)
+                    let i = 0;
+
+                    while (i < imageData.data.length){
+
+                        var hsv= RGBtoHSV([imageData.data[i],imageData.data[i+1],imageData.data[i+2]])
+                        hsv[1] *= targetValue
+                        //alert(hsv[1])
+                        var rgb = HSVtoRGB([hsv[0],hsv[1],hsv[2]])
+                        imageData.data[i] = rgb[0]
+                        imageData.data[i+1] = rgb[1]
+                        imageData.data[i+2] = rgb[2]
+                        i+=4;
+                    }
+                    console.log(imageData.data[100])
+                    ctx.putImageData(imageData,0,0)
+                    })
+
+        
+        </script>
+    </body>
+</html>
